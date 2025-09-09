@@ -1056,7 +1056,9 @@
 
 
     <script>
+
         async function verificaAlertas() {
+            
             const ahora = new Date();
             const hora_final = ahora.getHours().toString().padStart(2, '0') + ':' +
                 ahora.getMinutes().toString().padStart(2, '0');
@@ -1580,7 +1582,15 @@
             }
         }
 
-        function mostrarPopup(signal, condicion, operacion, mg) {
+        async function mostrarPopup(signal, condicion, operacion, mg) {
+            let colorOperacion = "green";
+            
+            if (operacion === "CALL"){
+                colorOperacion = "green";
+            }else{
+                colorOperacion = "green";
+            }
+            const porciento = await calcularPorcentajeSignal(colorOperacion);
             const ahora = new Date();
             const hora_final = ahora.getHours().toString().padStart(2, '0') + ':' +
                 ahora.getMinutes().toString().padStart(2, '0');
@@ -1589,10 +1599,11 @@
                 ${signal}<br>
                 Condición: Vela ${hora_final} ${condicion}<br>
                 Operación: ${operacion}<br>
+                Ultimas Velas: ${porciento} %<br>
                 ${mg}
                 `;
-            const container = document.getElementById("popup-container");
 
+            const container = document.getElementById("popup-container");
             const popup = document.createElement("div");
             popup.className = "popup-alert";
             popup.innerHTML = `
@@ -1927,6 +1938,38 @@
                 }
             });
         }
+
+        async function calcularPorcentajeSignal(colorBuscado) {
+            try {
+                const { data, error } = await clientesupabase
+                    .from(tablaPar)
+                    .select('candle_color')
+                    .order('id', { ascending: false }) // trae las últimas primero
+                    .limit(120);                       // últimas 120 velas
+                if (error) {
+                    console.error("⚠️ Error leyendo velas:", error);
+                    return null;
+                }
+                if (!data || data.length === 0) {
+                    console.warn("⚠️ No se encontraron velas en la base de datos.");
+                    return null;
+                }
+                // Normalizamos el color buscado
+                const colorObjetivo = colorBuscado.toLowerCase().trim();
+                // Contar cuántas velas son del color buscado
+                let conteo = 0;
+                data.forEach(vela => {
+                    const color = vela.candle_color?.toLowerCase().trim();
+                    if (color === colorObjetivo) conteo++;
+                });
+                const porcentaje = ((conteo / total) * 100).toFixed(2);
+                return porcentaje;
+            } catch (e) {
+                console.error("⚠️ Error en calcularPorcentaje:", e);
+                return null;
+            }
+        }
+
 
     </script>
 

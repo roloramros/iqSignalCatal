@@ -1585,7 +1585,15 @@
             }
         }
 
-        function mostrarPopup(signal, condicion, operacion, mg) {
+        async function mostrarPopup(signal, condicion, operacion, mg) {
+            let colorOperacion = "green";
+            if (operacion === "CALL"){
+                colorOperacion = "green";
+            }else{
+                colorOperacion = "red";
+            }
+            const porciento = await calcularPorcentajeSignal(colorOperacion);
+            
             const ahora = new Date();
             const hora_final = ahora.getHours().toString().padStart(2, '0') + ':' +
                 ahora.getMinutes().toString().padStart(2, '0');
@@ -1593,7 +1601,7 @@
                 ${analisisPar} (%Loss ${estadisticasPorcentual.rojo})<br>
                 ${signal}<br>
                 Condición: Vela ${hora_final} ${condicion}<br>
-                Operación: ${operacion}<br>
+                Operación: ${operacion} (${porciento} %)<br>
                 ${mg}
                 `;
             const container = document.getElementById("popup-container");
@@ -1610,6 +1618,13 @@
         }
 
         async function envioTelegram(signal, condicion, operacion, mg) {
+            let colorOperacion = "green";
+            if (operacion === "CALL"){
+                colorOperacion = "green";
+            }else{
+                colorOperacion = "red";
+            }
+            const porciento = await calcularPorcentajeSignal(colorOperacion);
             // Obtener la hora actual formateada
             const ahora = new Date();
             const hora_final = ahora.getHours().toString().padStart(2, '0') + ':' +
@@ -1619,9 +1634,8 @@
             const texto = `${analisisPar} (%Loss ${estadisticasPorcentual.rojo})\n` +
                 `${signal}\n` +
                 `Condición: Vela ${hora_final} ${condicion}\n` +
-                `Operación: ${operacion}\n` +
-                `${mg}\n` +
-                `Resultado:`;
+                `Operación: ${operacion} (${porciento} %)\n` +
+                `${mg}\n`;
 
             const token = '7971141664:AAHBoQ6QoBUsv0GCkMZ3WgNTntYfCpgjxQE';
 
@@ -1824,7 +1838,6 @@
 
         }
 
-
         function detectarDosPerdidasSeguidas() {
             const patrones = document.querySelectorAll('.patron');
             patrones.forEach(patron => {
@@ -1912,6 +1925,37 @@
             });
         }
 
+        async function calcularPorcentajeSignal(colorBuscado) {
+            try {
+                const { data, error } = await clientesupabase
+                    .from(tablaPar)
+                    .select('candle_color')
+                    .order('id', { ascending: false }) // trae las últimas primero
+                    .limit(120);                       // últimas 120 velas
+                if (error) {
+                    console.error("⚠️ Error leyendo velas:", error);
+                    return null;
+                }
+                if (!data || data.length === 0) {
+                    console.warn("⚠️ No se encontraron velas en la base de datos.");
+                    return null;
+                }
+                // Normalizamos el color buscado
+                const colorObjetivo = colorBuscado.toLowerCase().trim();
+                // Contar cuántas velas son del color buscado
+                let conteo = 0;
+                data.forEach(vela => {
+                    const color = vela.candle_color?.toLowerCase().trim();
+                    if (color === colorObjetivo) conteo++;
+                });
+                const total = data.length; 
+                const porcentaje = ((conteo / total) * 100).toFixed(2);
+                return porcentaje;
+            } catch (e) {
+                console.error("⚠️ Error en calcularPorcentaje:", e);
+                return null;
+            }
+        }
     </script>
 
 
