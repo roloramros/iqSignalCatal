@@ -26,6 +26,7 @@ zona = pytz.timezone("America/Havana")
 fecha_naive_inicio = datetime.fromisoformat(fecha_inicio_str) - timedelta(hours=2)
 minuto_redondeado = (fecha_naive_inicio.minute // 10) * 10
 fecha_naive_inicio = fecha_naive_inicio.replace(minute=minuto_redondeado, second=0, microsecond=0)
+
 fecha_naive_fin = datetime.fromisoformat(fecha_fin_str)
 
 # Localizar en zona horaria (agrega tzinfo correctamente)
@@ -61,7 +62,6 @@ for c in candles:
         "start_price": round(c["open"], 6),
         "end_price": round(c["close"], 6),
     })
-
 
 
 # === INSERTAR EN SUPABASE ===

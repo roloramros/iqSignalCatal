@@ -26,6 +26,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false
 }));
+app.use(express.json()); 
 
 // Función para renderizar con layout
 function renderWithLayout(viewPath, options, res) {
@@ -45,8 +46,6 @@ function requireLogin(req, res, next) {
 }
 
 app.use(express.static('public'));
-
-
 
 // Rutas públicas
 app.get('/', (req, res) => {
@@ -70,6 +69,39 @@ app.post('/login', async (req, res) => {
   }
 
   req.session.user = data.user;
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  const userAgent = req.headers['user-agent'];
+
+  try {
+    // Recuperar el alias de Telegram desde user_metadata
+    const telegramAlias = data.user.user_metadata?.telegram_username || "No definido";
+
+    // 🔔 Enviar mensaje a Telegram
+    await sendTelegramMessage(`🔐 Login exitoso:\nEmail: ${email}\nTelegram: ${telegramAlias}`);
+  } catch (telegramError) {
+    console.error("Error enviando login a Telegram:", telegramError);
+  }
+
+  try {
+    // Buscar si ya existe este dispositivo para este usuario
+    const { data: existing } = await supabase
+      .from("dispositivos_usuarios")
+      .select("*")
+      .eq("user_id", data.user.id)
+      .eq("ip", ip)
+      .eq("user_agent", userAgent);
+
+    if (!existing || existing.length === 0) {
+      await supabase.from("dispositivos_usuarios").insert({
+        user_id: data.user.id,
+        ip: ip,
+        user_agent: userAgent
+      });
+    }
+  } catch (e) {
+    console.error("❌ Error guardando dispositivo:", e);
+  }
+
   res.redirect('/panel');
 });
 
@@ -78,13 +110,10 @@ app.post('/register', async (req, res) => {
   const { email, password, telegram_username } = req.body;
 
   try {
-    // Registrar usuario en Supabase Auth
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: { telegram_username }
-      }
+      options: { data: { telegram_username } }
     });
 
     if (error) {
@@ -97,31 +126,25 @@ app.post('/register', async (req, res) => {
       throw error;
     }
 
-    // Si el registro fue exitoso y tenemos el user_id
     if (data.user && data.user.id) {
       try {
-        // Insertar en la tabla telegram_chat_ids
-        const { error: insertError } = await supabase
-          .from('telegram_chat_ids')
-          .insert({
-            user_id: data.user.id,
-            telegram_alias: telegram_username,
-            chat_id: null // Se actualizará después por el bot de Telegram
-          });
+        await supabase.from('telegram_chat_ids').insert({
+          user_id: data.user.id,
+          telegram_alias: telegram_username,
+          chat_id: null
+        });
 
-        if (insertError) {
-          console.error('Error al insertar en telegram_chat_ids:', insertError);
-          // Opcional: podrías decidir si mostrar este error al usuario o solo loggearlo
-        }
+        // 🔔 Enviar mensaje a Telegram cuando se registre un usuario
+        await sendTelegramMessage(`✅ Nuevo registro:\nEmail: ${email}\nTelegram: ${telegram_username}`);
       } catch (telegramError) {
-        console.error('Error al procesar datos de Telegram:', telegramError);
-        // Continuar con el registro aunque falle la inserción en telegram_chat_ids
+        console.error('Error en registro de Telegram:', telegramError);
       }
     }
 
     res.render('register', {
       error: null,
-      success: `Usuario ${email} registrado correctamente.`
+      success: `Usuario ${email} registrado correctamente.`,
+      telegramUrl: "https://t.me/iq_signalcatal_bot"
     });
 
   } catch (error) {
@@ -133,6 +156,42 @@ app.post('/register', async (req, res) => {
 });
 
 
+const axios = require('axios');
+const https = require("https");
+const agent = new https.Agent({ family: 4 }); // 👈 Forzar IPv4
+
+const TELEGRAM_TOKEN = "8403266609:AAEBEnN1i72-7kYbd2dsZtEjSuhsrxkjQ7c";
+const TELEGRAM_CHAT_ID = "1589398506";
+
+
+
+async function sendTelegramMessage(message) {
+  try {
+    await axios.post(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+      chat_id: TELEGRAM_CHAT_ID,
+      text: message,
+      parse_mode: "HTML"
+    });
+  } catch (err) {
+    console.error("❌ Error enviando mensaje a Telegram:", err.response?.data || err.message);
+  }
+}
+
+app.post('/sendMessage', requireLogin, async (req, res) => {
+  const { message, chatId } = req.body;
+  try {
+    await axios.post(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+      chat_id: chatId,
+      text: message,
+      parse_mode: "HTML"
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("❌ Error en backend al enviar mensaje:", error);
+    res.status(500).json({ success: false, error: "Error enviando mensaje" });
+  }
+});
 
 // Logout
 app.get('/logout', (req, res) => {
@@ -140,7 +199,6 @@ app.get('/logout', (req, res) => {
     res.redirect('/');
   });
 });
-
 
 // Rutas privadas con layout
 app.get('/panel', requireLogin, (req, res) => {
@@ -171,7 +229,7 @@ app.post('/cargar-velas', requireLogin, (req, res) => {
 
 
   const scriptPath = path.join(__dirname, 'scripts', 'descargar_velas.py');
-  const proceso = spawn('python', [scriptPath, par, fechaInicio, fechaFin]);
+  const proceso = spawn('python3', [scriptPath, par, fechaInicio, fechaFin]);
   let salida = '';
   let error = '';
   proceso.stdout.on('data', (data) => {
@@ -191,13 +249,10 @@ app.post('/cargar-velas', requireLogin, (req, res) => {
   });
 });
 
-app.use(express.json());
-
-// Dentro de index.js
 app.post('/analizar-alerta', requireLogin, (req, res) => {
   const { par, fechaHora, cantidad } = req.body;
   const scriptPath = path.join(__dirname, 'scripts', 'signals_results.py');
-  const proceso = spawn('python', [scriptPath, par, fechaHora, cantidad]);
+  const proceso = spawn('python3', [scriptPath, par, fechaHora, cantidad]);
   let salida = '';
   let error = '';
   proceso.stdout.on('data', (data) => {
@@ -219,10 +274,6 @@ app.post('/analizar-alerta', requireLogin, (req, res) => {
     }
   });
 });
-
-
-
-
 
 app.get('/eurusd_otc', requireLogin, (req, res) => {
   renderWithLayout('otc/eurusd_otc.ejs', {

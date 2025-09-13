@@ -158,7 +158,7 @@
 </head>
 
 <body>
-  <h2 class="mb-3">Backtesting</h2>
+  <h2 class="mb-3">Probador de Estrategias</h2>
 
   <form id="formVelas" action="/cargar-velas" method="POST" class="d-flex flex-wrap align-items-end gap-2">
     <div>
@@ -541,11 +541,6 @@
     let tresPerdidasSeguidas = {};
     let cuadranteConDoji = {};
     let alertasExportar = [];
-
-    let confluenciaActiva = false;
-    let condicionConfluencia = null;
-    let direccionObjetivoConfluencia = null;
-    let firstLoss = 0;
   </script>
 
 
@@ -2637,80 +2632,68 @@
         }
 
         if (signalConfig.confluencia) {  //Notificacion para la confluencia de patrones
-          if (condicionConfluencia === ultimaVela) {
-            confluenciaActiva = true;
-          } else if (condicionConfluencia !== ultimaVela) {     //else if (condicionConfluencia !== null && condicionConfluencia !== ultimaVela) {
-            confluenciaActiva = false;
-            condicionConfluencia = null;
-            direccionObjetivoConfluencia = null;
-            firstLoss = 0;
-          }
-
-          if (confluenciaActiva) {
-
-            if (signalConfig.martin_gala === "gale1trasperdida") {
-              if (direccionObjetivoConfluencia === 'green') {
-                if (signalConfig.notificacion === "navegador" || signalConfig.notificacion === "ambos") {
-                  mostrarPopup("Confluencia de Patrones", "Bajista", "CALL", gale, cantGale);
-                }
-              }
-              if (direccionObjetivoConfluencia === 'red') {
-                if (signalConfig.notificacion === "navegador" || signalConfig.notificacion === "ambos") {
-                  mostrarPopup("Confluencia de Patrones", "Alcista", "PUT", gale, cantGale);
-                }
-              }
-              confluenciaActiva = false;
-              condicionConfluencia = null;
-              direccionObjetivoConfluencia = null;
-              firstLoss = 0;
-            }
-
-            if (signalConfig.martin_gala === "nogale") {
-              if (firstLoss === 0) {
-                console.log("Se cumplo la condicion")
-              }
-              if (firstLoss === 1) {
-                console.log("Perdio 1ra Entrada")
-                if (direccionObjetivoConfluencia === 'green') {
-                  if (signalConfig.notificacion === "navegador" || signalConfig.notificacion === "ambos") {
-                    mostrarPopup("Confluencia de Patrones", "Bajista", "CALL", gale, cantGale);
-                  }
-                }
-                if (direccionObjetivoConfluencia === 'red') {
-                  if (signalConfig.notificacion === "navegador" || signalConfig.notificacion === "ambos") {
-                    mostrarPopup("Confluencia de Patrones", "Alcista", "PUT", gale, cantGale);
-                  }
-                }
-                confluenciaActiva = false;
-                condicionConfluencia = null;
-                direccionObjetivoConfluencia = null;
-                firstLoss = 0;
-              }
-              if (firstLoss === 0 && direccionObjetivoConfluencia !== ultimaVela) {
-                firstLoss++;
-              }
-            }
-          }
-
           const conteo = contarCeldasColoreadas();
-          const escenarios = [
-            { cond: conteo.verde.verde === 6, log: "Si verde CALL", tipo: "Alcista", op: "CALL", color: 'green', dir: 'green' },
-            { cond: conteo.verde.rojo === 6, log: "Si verde PUT", tipo: "Alcista", op: "PUT", color: 'green', dir: 'red' },
-            { cond: conteo.rojo.verde === 6, log: "Si roja CALL", tipo: "Bajista", op: "CALL", color: 'red', dir: 'green' },
-            { cond: conteo.rojo.rojo === 6, log: "Si roja PUT", tipo: "Bajista", op: "PUT", color: 'red', dir: 'red' }
-          ];
-
-          for (let e of escenarios) {
-            if (e.cond) {
-              console.log(e.log);
-
-              if (["gale1directo", "gale2", "nogaledirecto"].includes(signalConfig.martin_gala)) {
+          if (signalConfig.martin_gala === "gale1trasperdida") {
+            if (condicionCoincidencia === ultimaVela) {
+              if (velaBuscadaCoincidencia === 'CALL') {
                 if (signalConfig.notificacion === "navegador" || signalConfig.notificacion === "ambos") {
-                  mostrarPopup("Confluencia de Patrones", e.tipo, e.op, gale, cantGale);
+                  mostrarPopup("Confluencia de Patrones", "Bajista", velaBuscadaCoincidencia, gale, cantGale);
                 }
-              } else {
-                condicionConfluencia = e.color;
-                direccionObjetivoConfluencia = e.dir;
+              }
+              if (velaBuscadaCoincidencia === 'PUT') {
+                if (signalConfig.notificacion === "navegador" || signalConfig.notificacion === "ambos") {
+                  mostrarPopup("Confluencia de Patrones", "Alcista", velaBuscadaCoincidencia, gale, cantGale);
+                }
+              }
+              condicionCoincidencia = null;
+            } else {
+              condicionCoincidencia = null;
+            }
+          }
+
+          if (conteo.verde.verde === 6) {
+            condicionCoincidencia = null;
+            condicion = "Alcista";
+            operacion = "CALL"
+            condicionCoincidencia = 'green'
+            velaBuscadaCoincidencia = "CALL"
+            if (signalConfig.martin_gala === "gale1directo" || signalConfig.martin_gala === "gale2") {
+              if (signalConfig.notificacion === "navegador" || signalConfig.notificacion === "ambos") {
+                mostrarPopup("Confluencia de Patrones", condicion, operacion, gale, cantGale);
+              }
+            }
+
+          }
+          if (conteo.verde.rojo === 6) {
+            condicion = "Alcista";
+            operacion = "PUT"
+            condicionCoincidencia = 'green'
+            velaBuscadaCoincidencia = "PUT"
+            if (signalConfig.martin_gala === "gale1directo" || signalConfig.martin_gala === "gale2") {
+              if (signalConfig.notificacion === "navegador" || signalConfig.notificacion === "ambos") {
+                mostrarPopup("Confluencia de Patrones", condicion, operacion, gale, cantGale);
+              }
+            }
+          }
+          if (conteo.rojo.verde === 6) {
+            condicion = "Bajista";
+            operacion = "CALL"
+            condicionCoincidencia = 'red'
+            velaBuscadaCoincidencia = "CALL"
+            if (signalConfig.martin_gala === "gale1directo" || signalConfig.martin_gala === "gale2") {
+              if (signalConfig.notificacion === "navegador" || signalConfig.notificacion === "ambos") {
+                mostrarPopup("Confluencia de Patrones", condicion, operacion, gale, cantGale);
+              }
+            }
+          }
+          if (conteo.rojo.rojo === 6) {
+            condicion = "Bajista";
+            operacion = "PUT"
+            condicionCoincidencia = 'red'
+            velaBuscadaCoincidencia = "PUT"
+            if (signalConfig.martin_gala === "gale1directo" || signalConfig.martin_gala === "gale2") {
+              if (signalConfig.notificacion === "navegador" || signalConfig.notificacion === "ambos") {
+                mostrarPopup("Confluencia de Patrones", condicion, operacion, gale, cantGale);
               }
             }
           }
@@ -3357,7 +3340,7 @@
         });
 
         Swal.fire({
-          title: '📊 Resumen del Backtesting',
+          title: '📊 Resumen del Análisis',
           html: `
         <div style="text-align:left; font-size:16px;">
             <b>✅ Ganado directo:</b> ${ganadoDirecto}<br>
@@ -3412,7 +3395,7 @@
       });
 
       Swal.fire({
-        title: '📊 Resumen del Backtesting',
+        title: '📊 Resumen del Análsis',
         html: `
             <div style="text-align:left; font-size:16px;">
                 <b>✅ Ganado directo:</b> ${ganadoDirecto}<br>

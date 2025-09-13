@@ -31,6 +31,8 @@
         <% if (success) { %>
           <div class="alert alert-success" role="alert">
             <%= success %>
+              <br>
+              <a href="<%= telegramUrl %>" target="_blank">Conectar con Telegram</a>
           </div>
           <% } %>
 
@@ -46,7 +48,8 @@
                 <div class="input-group">
                   <input type="text" name="telegram_username" id="telegram_username" class="form-control"
                     placeholder="Usuario de telegram" required>
-                  <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" title="Por favor ingresa tu usuario de Telegram completo (incluyendo @) para Recibir señales de trading en tiempo real.">
+                  <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right"
+                    title="Por favor ingresa tu usuario de Telegram completo (incluyendo @) para Recibir señales de trading en tiempo real.">
                     <i class="bi bi-question-circle-fill text-primary"></i>
                   </span>
                 </div>

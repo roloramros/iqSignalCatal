@@ -11,6 +11,7 @@
   "description": "",
   "dependencies": {
     "@supabase/supabase-js": "^2.50.3",
+    "axios": "^1.12.1",
     "body-parser": "^2.2.0",
     "dotenv": "^17.0.1",
     "ejs": "^3.1.10",

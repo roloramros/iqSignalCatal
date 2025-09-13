@@ -439,9 +439,9 @@
 
                 <thead>
                     <tr>
-                        <th>Patrón</th>
-                        <th colspan="3">Vela verde</th>
-                        <th colspan="3">Vela roja</th>
+                        <th>Si vela formándose cierra: </th>
+                        <th colspan="3">Alcista</th>
+                        <th colspan="3">Bajista</th>
                     </tr>
                     <tr>
                         <th></th>
@@ -622,13 +622,23 @@
 
         let tablaPar = "eurusd_otc";
         let analisisPar = "EUR/USD OTC"
+        let lastStartTime = null;
 
         let ultimoMinutoProcesado = null; // Variable global para rastrear el último minuto procesado
         let ultimaVelaProcesada = null; // Almacenará el ID o timestamp de la última vela procesada
+        let ultimaVela = null;
+
 
         let signalConfig = null;
         let userId = null;
-        let primeraOperacion = true;
+
+
+        let confluenciaActiva = false;
+        let condicionConfluencia = null;
+        let direccionObjetivoConfluencia = null;
+        let firstLoss = 0;
+
+
 
         let condicionCoincidencia = null;
         let velaBuscadaCoincidencia = null;
@@ -772,6 +782,11 @@
             });
         });
 
+
+
+
+
+
         async function cargarVelas() {
             const { data, error } = await clientesupabase
                 .from(tablaPar)
@@ -862,6 +877,10 @@
             esperarNuevaVela();
         });
 
+
+
+
+
         function agregarResultadoAlHistorico(patronId, resultado) {
             if (!historicoPatrones[patronId]) {
                 historicoPatrones[patronId] = [];
@@ -876,8 +895,13 @@
             actualizarHistorico(patronId, historicoPatrones[patronId]);
         }
 
+
         function analizarVelaPorDigito(vela) {
             const horaStr = vela.start_time.toString();
+            if (vela.start_time.toString() === lastStartTime){
+                return;
+            }
+            lastStartTime = horaStr;
             const minuto = parseInt(horaStr.split(':')[1] || '0');
             const digito = minuto % 10;
             const funciones = [
@@ -978,6 +1002,14 @@
             return dataOrdenada;
         }
 
+
+
+
+
+
+
+
+
         async function actualizarHistorico(patronId, historicoPatron) {
 
             const cuadrosContainer = document.getElementById(patronId);
@@ -1039,7 +1071,6 @@
 
     <script>
         async function verificaAlertas() {
-            calcularPorcentajeSignal("red");
             const ahora = new Date();
             const hora_final = ahora.getHours().toString().padStart(2, '0') + ':' +
                 ahora.getMinutes().toString().padStart(2, '0');
@@ -1195,7 +1226,6 @@
                         }
                     }
                 }
-
                 if (signalConfig.alcanza_100) { // Notificación para cuando alcanza el 100%
                     for (let patron in alcanza100) {
                         if (alcanza100[patron]) {
@@ -1233,7 +1263,6 @@
 
                                         if (signalConfig.notificacion === "navegador" || signalConfig.notificacion === "ambos") {
                                             mostrarPopup(`${patron} alcanza 100%`, "Alc/Baj", operacion, gale);
-                                            mostrarNotificacion(`${patron} alcanza 100%`, "Alc/Baj", operacion, gale);
                                         }
                                         if (signalConfig.notificacion === "telegram" || signalConfig.notificacion === "ambos") {
                                             envioTelegram(`${patron} alcanza 100%`, "Alc/Baj", operacion, gale)
@@ -1244,7 +1273,6 @@
                                             guardarAlertaEnSupabase(`${patron} alcanza 100%`, hora_final, info.condicion, info.operacion, cantGale)
                                             if (signalConfig.notificacion === "navegador" || signalConfig.notificacion === "ambos") {
                                                 mostrarPopup(`${patron} alcanza 100%`, info.condicion, info.operacion, gale);
-                                                mostrarNotificacion(`${patron} alcanza 100%`, info.condicion, info.operacion, gale);
                                             }
                                             if (signalConfig.notificacion === "telegram" || signalConfig.notificacion === "ambos") {
                                                 envioTelegram(`${patron} alcanza 100%`, info.condicion, info.operacion, gale)
@@ -1295,7 +1323,6 @@
                                         guardarAlertaEnSupabase(`${patron} pierde 100%`, hora_final, "Alc/Baj", operacion, cantGale)
                                         if (signalConfig.notificacion === "navegador" || signalConfig.notificacion === "ambos") {
                                             mostrarPopup(`${patron} pierde 100%`, "Alc/Baj", operacion, gale);
-                                            mostrarNotificacion(`${patron} pierde 100%`, "Alc/Baj", operacion, gale);
 
                                         }
                                         if (signalConfig.notificacion === "telegram" || signalConfig.notificacion === "ambos") {
@@ -1307,7 +1334,6 @@
                                             guardarAlertaEnSupabase(`${patron} pierde 100%`, hora_final, info.condicion, info.operacion, cantGale)
                                             if (signalConfig.notificacion === "navegador" || signalConfig.notificacion === "ambos") {
                                                 mostrarPopup(`${patron} pierde 100%`, info.condicion, info.operacion, gale);
-                                                mostrarNotificacion(`${patron} pierde 100%`, info.condicion, info.operacion, gale);
                                             }
                                             if (signalConfig.notificacion === "telegram" || signalConfig.notificacion === "ambos") {
                                                 envioTelegram(`${patron} pierde 100%`, info.condicion, info.operacion, gale)
@@ -1360,7 +1386,6 @@
                                         guardarAlertaEnSupabase(`${patron} con 2 pérdidas seguidas`, hora_final, "Alc/Baj", operacion, cantGale);
                                         if (signalConfig.notificacion === "navegador" || signalConfig.notificacion === "ambos") {
                                             mostrarPopup(`${patron} con 2 pérdidas seguidas`, "Alc/Baj", operacion, gale);
-                                            mostrarNotificacion(`${patron} con 2 pérdidas seguidas`, "Alc/Baj", operacion, gale);
                                         }
                                         if (signalConfig.notificacion === "telegram" || signalConfig.notificacion === "ambos") {
                                             envioTelegram(`${patron} con 2 pérdidas seguidas`, "Alc/Baj", operacion, gale);
@@ -1371,7 +1396,6 @@
                                             guardarAlertaEnSupabase(`${patron} con 2 pérdidas seguidas`, hora_final, info.condicion, info.operacion, cantGale);
                                             if (signalConfig.notificacion === "navegador" || signalConfig.notificacion === "ambos") {
                                                 mostrarPopup(`${patron} con 2 pérdidas seguidas`, info.condicion, info.operacion, gale);
-                                                mostrarNotificacion(`${patron} con 2 pérdidas seguidas`, info.condicion, info.operacion, gale);
                                             }
                                             if (signalConfig.notificacion === "telegram" || signalConfig.notificacion === "ambos") {
                                                 envioTelegram(`${patron} con 2 pérdidas seguidas`, info.condicion, info.operacion, gale);
@@ -1425,7 +1449,6 @@
                                         guardarAlertaEnSupabase(`${patron} con 3 pérdidas seguidas`, hora_final, "Alc/Baj", operacion, cantGale);
                                         if (signalConfig.notificacion === "navegador" || signalConfig.notificacion === "ambos") {
                                             mostrarPopup(`${patron} con 3 pérdidas seguidas`, "Alc/Baj", operacion, gale);
-                                            mostrarNotificacion(`${patron} con 3 pérdidas seguidas`, "Alc/Baj", operacion, gale);
                                         }
                                         if (signalConfig.notificacion === "telegram" || signalConfig.notificacion === "ambos") {
                                             envioTelegram(`${patron} con 3 pérdidas seguidas`, "Alc/Baj", operacion, gale);
@@ -1436,7 +1459,6 @@
                                             guardarAlertaEnSupabase(`${patron} con 3 pérdidas seguidas`, hora_final, info.condicion, info.operacion, cantGale);
                                             if (signalConfig.notificacion === "navegador" || signalConfig.notificacion === "ambos") {
                                                 mostrarPopup(`${patron} con 3 pérdidas seguidas`, info.condicion, info.operacion, gale);
-                                                mostrarNotificacion(`${patron} con 3 pérdidas seguidas`, info.condicion, info.operacion, gale);
                                             }
                                             if (signalConfig.notificacion === "telegram" || signalConfig.notificacion === "ambos") {
                                                 envioTelegram(`${patron} con 3 pérdidas seguidas`, info.condicion, info.operacion, gale);
@@ -1490,7 +1512,6 @@
                                         guardarAlertaEnSupabase(`${patron} con un cuadrante con Doji`, hora_final, "Alc/Baj", operacion, cantGale);
                                         if (signalConfig.notificacion === "navegador" || signalConfig.notificacion === "ambos") {
                                             mostrarPopup(`${patron} con con un cuadrante con Doji`, "Alc/Baj", operacion, gale);
-                                            mostrarNotificacion(`${patron} con con un cuadrante con Doji`, "Alc/Baj", operacion, gale);
                                         }
                                         if (signalConfig.notificacion === "telegram" || signalConfig.notificacion === "ambos") {
                                             envioTelegram(`${patron} con con un cuadrante con Doji`, "Alc/Baj", operacion, gale);
@@ -1501,7 +1522,6 @@
                                             guardarAlertaEnSupabase(`${patron} con con un cuadrante con Doji`, hora_final, info.condicion, info.operacion, cantGale);
                                             if (signalConfig.notificacion === "navegador" || signalConfig.notificacion === "ambos") {
                                                 mostrarPopup(`${patron} con con un cuadrante con Doji`, info.condicion, info.operacion, gale);
-                                                mostrarNotificacion(`${patron} con con un cuadrante con Doji`, info.condicion, info.operacion, gale);
                                             }
                                             if (signalConfig.notificacion === "telegram" || signalConfig.notificacion === "ambos") {
                                                 envioTelegram(`${patron} con con un cuadrante con Doji`, info.condicion, info.operacion, gale);
@@ -1525,13 +1545,21 @@
         }
 
         async function guardarAlertaEnSupabase(signal, vela, condicion, operacion, numeroDeGale) {
+            let colorOperacion = "green";
+            if (operacion === "CALL"){
+                colorOperacion = "green";
+            }else{
+                colorOperacion = "red";
+            }
+            const porciento = await calcularPorcentajeSignal(colorOperacion);
+            const textoFinal = `${operacion} (${porciento} %)`;
             const alerta = {
                 user_id: userId,
                 señal: signal,
                 par: analisisPar,
                 vela_condicional: vela || null,
                 condicion: condicion,
-                operacion: operacion,
+                operacion: textoFinal,
                 loss: estadisticasPorcentual.rojo,
                 martingala: numeroDeGale,
                 resultado: null
@@ -1563,7 +1591,14 @@
             }
         }
 
-        function mostrarPopup(signal, condicion, operacion, mg) {
+        async function mostrarPopup(signal, condicion, operacion, mg) {
+            let colorOperacion = "green";
+            if (operacion === "CALL"){
+                colorOperacion = "green";
+            }else{
+                colorOperacion = "red";
+            }
+            const porciento = await calcularPorcentajeSignal(colorOperacion);
             const ahora = new Date();
             const hora_final = ahora.getHours().toString().padStart(2, '0') + ':' +
                 ahora.getMinutes().toString().padStart(2, '0');
@@ -1571,7 +1606,7 @@
                 ${analisisPar} (%Loss ${estadisticasPorcentual.rojo})<br>
                 ${signal}<br>
                 Condición: Vela ${hora_final} ${condicion}<br>
-                Operación: ${operacion}<br>
+                Operación: ${operacion} (${porciento} %)<br>
                 ${mg}
                 `;
             const container = document.getElementById("popup-container");
@@ -1588,6 +1623,13 @@
         }
 
         async function envioTelegram(signal, condicion, operacion, mg) {
+            let colorOperacion = "green";
+            if (operacion === "CALL") {
+                colorOperacion = "green";
+            } else {
+                colorOperacion = "red";
+            }
+            const porciento = await calcularPorcentajeSignal(colorOperacion);
             // Obtener la hora actual formateada
             const ahora = new Date();
             const hora_final = ahora.getHours().toString().padStart(2, '0') + ':' +
@@ -1597,13 +1639,12 @@
             const texto = `${analisisPar} (%Loss ${estadisticasPorcentual.rojo})\n` +
                 `${signal}\n` +
                 `Condición: Vela ${hora_final} ${condicion}\n` +
-                `Operación: ${operacion}\n` +
+                `Operación: ${operacion} (${porciento} %)\n` +
                 `${mg}\n`;
 
-            const token = '7971141664:AAHBoQ6QoBUsv0GCkMZ3WgNTntYfCpgjxQE';
+            const token = '7971141664:AAFNFXWpHePHVkaedf1F75GKUk4bHwcJ_HE';
 
             try {
-
                 // Obtener el chat_id del usuario desde Supabase
                 const { data: telegramData, error: telegramError } = await clientesupabase
                     .from('telegram_chat_ids')
@@ -1617,29 +1658,14 @@
                 }
 
                 const chatId = telegramData.chat_id;
-
-                // Enviar mensaje al chat_id específico del usuario
-                const url = `https://api.telegram.org/bot${token}/sendMessage`;
-                const params = new URLSearchParams();
-                params.append('chat_id', chatId);
-                params.append('text', texto);
-                params.append('parse_mode', 'HTML');
-
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: params
+                await fetch("/sendMessage", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        message: texto,
+                        chatId: chatId // dinámico
+                    })
                 });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    console.error('Detalles del error:', errorData);
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
                 return true;
             } catch (error) {
                 console.error('Error completo al enviar a Telegram:', {
@@ -1649,6 +1675,7 @@
                 });
                 return false;
             }
+
         }
 
         function calcularCantidadDeVelas() {
@@ -1703,7 +1730,6 @@
                     }
                 }
             }
-
             return resultados;
         }
 
@@ -1802,28 +1828,6 @@
 
         }
 
-        function mostrarNotificacion(signal, condicion, operacion, mg) {
-            const ahora = new Date();
-            const hora_final = ahora.getHours().toString().padStart(2, '0') + ':' +
-                ahora.getMinutes().toString().padStart(2, '0');
-            const texto = `
-                ${analisisPar} (%Loss ${estadisticasPorcentual.rojo})
-                ${signal}
-                Condición: Vela ${hora_final} ${condicion}
-                Operación: ${operacion}
-                ${mg}
-                `;
-            if (Notification.permission === "granted") {
-                new Notification("Alerta para Operar", { body: texto });
-            } else if (Notification.permission !== "denied") {
-                Notification.requestPermission().then(permission => {
-                    if (permission === "granted") {
-                        new Notification("Alerta para Operar", { body: texto });
-                    }
-                });
-            }
-        }
-
         function detectarDosPerdidasSeguidas() {
             const patrones = document.querySelectorAll('.patron');
             patrones.forEach(patron => {
@@ -1910,7 +1914,7 @@
                 }
             });
         }
-
+        
         async function calcularPorcentajeSignal(colorBuscado) {
             try {
                 const { data, error } = await clientesupabase
@@ -1934,23 +1938,19 @@
                     const color = vela.candle_color?.toLowerCase().trim();
                     if (color === colorObjetivo) conteo++;
                 });
-                const total = data.length;
+                const total = data.length; 
                 const porcentaje = ((conteo / total) * 100).toFixed(2);
-
-                console.log(`📊 Porcentaje de ${colorObjetivo}: ${porcentaje}% (${conteo}/${total})`);
-
                 return porcentaje;
             } catch (e) {
                 console.error("⚠️ Error en calcularPorcentaje:", e);
                 return null;
             }
         }
-
     </script>
 
 
     <script>
-        let ultimaVela = null;
+
         function digito0(vela) {
             ultimaVela = coloresDigitos[0];
             ['MHI Minoría', 'MHI Mayoría', 'Millón Minoría', 'Millón Mayoría'].forEach(patron => {

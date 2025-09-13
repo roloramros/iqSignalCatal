@@ -2355,30 +2355,22 @@
 
             //Analisis de las que pueden ganar en este digito:
             //MHI mayoria y minoria
-            if (coloresDigitos[7] === 'doji' || coloresDigitos[8] === 'doji' || coloresDigitos[9] === coloresDigitos == 'doji') {
-                historicoMHI.shift();
-                historicoMHI.push("E");
-                actualizarHistorico("MHI_Minoría", historicoMHI);
-                historicoMHIMAY.shift();
-                historicoMHIMAY.push("E");
-                actualizarHistorico("MHI_Mayoría", historicoMHIMAY);
+            if (coloresDigitos[7] === 'doji' || coloresDigitos[8] === 'doji' || coloresDigitos[9] === 'doji') {
+                agregarResultadoAlHistorico("MHI_Minoría", 'E');
+                agregarResultadoAlHistorico("MHI_Mayoría", 'E');
             } else {
                 const minoritario = colorMenosRepetido([7, 8, 9]);
                 if (minoritario === coloresDigitos[0]) {
-                    historicoMHI.shift();
-                    historicoMHI.push("D");
-                    actualizarHistorico("MHI_Minoría", historicoMHI);
+                    agregarResultadoAlHistorico("MHI_Minoría", 'D');
                 }
                 const mayoritario = colorMasRepetido([7, 8, 9]);
 
                 if (mayoritario === coloresDigitos[0]) {
-                    historicoMHIMAY.shift();
-                    historicoMHIMAY.push("D");
-                    actualizarHistorico("MHI_Mayoría", historicoMHIMAY);
+                    agregarResultadoAlHistorico("MHI_Mayoría", 'D');
                 }
             }
             //MILLON mayoria y minoria
-            if (coloresDigitos[5] === 'doji' || coloresDigitos[6] === 'doji' || coloresDigitos[7] === 'doji' || coloresDigitos[8] === 'doji' || coloresDigitos[9] === coloresDigitos == 'doji') {
+            if (coloresDigitos[5] === 'doji' || coloresDigitos[6] === 'doji' || coloresDigitos[7] === 'doji' || coloresDigitos[8] === 'doji' || coloresDigitos[9] === 'doji') {
                 historicoMILLONMIN.shift();
                 historicoMILLONMIN.push("E");
                 actualizarHistorico("Millón_Minoría", historicoMILLONMIN);
@@ -2541,7 +2533,7 @@
                 }
             }
             //MHI2 mayoria y minoria2
-            if (coloresDigitos[7] === 'doji' || coloresDigitos[8] === 'doji' || coloresDigitos[9] === coloresDigitos == 'doji') {
+            if (coloresDigitos[7] === 'doji' || coloresDigitos[8] === 'doji' || coloresDigitos[9] === 'doji') {
                 historicoMHI2.shift();
                 historicoMHI2.push("E");
                 actualizarHistorico("MHI_2_Minoría", historicoMHI2);
@@ -2642,7 +2634,7 @@
             if (coloresDigitos[7] !== 'doji' && coloresDigitos[8] !== 'doji' && coloresDigitos[9] !== 'doji') {
                 const minoritario = colorMenosRepetido([7, 8, 9]);
                 if (minoritario === coloresDigitos[2]) {
-                    if (minoritario == 'green') {
+                    if (minoritario === 'green') {
                         getCelda('MHI 3 Mayoría', 3).style.backgroundColor = 'red';
                     } else {
                         getCelda('MHI 3 Mayoría', 6).style.backgroundColor = 'green';
@@ -2749,7 +2741,7 @@
                 }
             }
             //MHI3 mayoria y minoria3
-            if (coloresDigitos[7] === 'doji' || coloresDigitos[8] === 'doji' || coloresDigitos[9] === coloresDigitos == 'doji') {
+            if (coloresDigitos[7] === 'doji' || coloresDigitos[8] === 'doji' || coloresDigitos[9] === 'doji') {
                 historicoMHI3.shift();
                 historicoMHI3.push("E");
                 actualizarHistorico("MHI_3_Minoría", historicoMHI3);
@@ -2793,7 +2785,7 @@
                 }
             }
             //Mejor de 3
-            if (coloresDigitos[6] === 'doji' || coloresDigitos[7] === 'doji' || coloresDigitos[8] === coloresDigitos == 'doji') {
+            if (coloresDigitos[6] === 'doji' || coloresDigitos[7] === 'doji' || coloresDigitos[8] === 'doji') {
                 historicoMEJOR3.shift();
                 historicoMEJOR3.push("E");
                 actualizarHistorico("Mejor_de_3", historicoMEJOR3);
@@ -2906,7 +2898,7 @@
             getCelda('Patron 3x1', 4).style.backgroundColor = '';
             if (coloresDigitos[0] !== 'doji' && coloresDigitos[1] !== 'doji' && coloresDigitos[2] !== 'doji') {    //Para si hay un doji no hacer nada
                 const minoritario = colorMenosRepetido([0, 1, 2]);
-                if (minoritario == 'green') {
+                if (minoritario === 'green') {
                     getCelda('Patron 3x1', 5).style.backgroundColor = 'green';
                 } else {
                     getCelda('Patron 3x1', 2).style.backgroundColor = 'red';
@@ -3165,7 +3157,7 @@
                 }
             }
             //Patron 3x1
-            if (coloresDigitos[0] === 'doji' || coloresDigitos[1] === 'doji' || coloresDigitos[2] === coloresDigitos == 'doji') {
+            if (coloresDigitos[0] === 'doji' || coloresDigitos[1] === 'doji' || coloresDigitos[2] === 'doji') {
                 historicoPATRON3X1.shift();
                 historicoPATRON3X1.push("E");
                 actualizarHistorico("Patron_3x1", historicoPATRON3X1);
@@ -3297,29 +3289,21 @@
             }
             //Analisis de las que pueden ganar en este digito:
             //MHI mayoria y minoria
-            if (coloresDigitos[2] === 'doji' || coloresDigitos[3] === 'doji' || coloresDigitos[4] === coloresDigitos == 'doji') {
-                historicoMHI.shift();
-                historicoMHI.push("E");
-                actualizarHistorico("MHI_Minoría", historicoMHI);
-                historicoMHIMAY.shift();
-                historicoMHIMAY.push("E");
-                actualizarHistorico("MHI_Mayoría", historicoMHIMAY);
+            if (coloresDigitos[2] === 'doji' || coloresDigitos[3] === 'doji' || coloresDigitos[4] === 'doji') {
+                agregarResultadoAlHistorico("MHI_Minoría", 'E');
+                agregarResultadoAlHistorico("MHI_Mayoría", 'E');
             } else {
                 const minoritario = colorMenosRepetido([2, 3, 4]);
                 if (minoritario === coloresDigitos[5]) {
-                    historicoMHI.shift();
-                    historicoMHI.push("D");
-                    actualizarHistorico("MHI_Minoría", historicoMHI);
+                    agregarResultadoAlHistorico("MHI_Minoría", 'D');
                 }
                 const mayoritario = colorMasRepetido([2, 3, 4]);
                 if (mayoritario === coloresDigitos[5]) {
-                    historicoMHIMAY.shift();
-                    historicoMHIMAY.push("D");
-                    actualizarHistorico("MHI_Mayoría", historicoMHIMAY);
+                    agregarResultadoAlHistorico("MHI_Mayoría", 'D');
                 }
             }
             //MHI mayoria y minoria
-            if (coloresDigitos[0] === 'doji' || coloresDigitos[1] === 'doji' || coloresDigitos[2] === 'doji' || coloresDigitos[3] === 'doji' || coloresDigitos[4] === coloresDigitos == 'doji') {
+            if (coloresDigitos[0] === 'doji' || coloresDigitos[1] === 'doji' || coloresDigitos[2] === 'doji' || coloresDigitos[3] === 'doji' || coloresDigitos[4] === 'doji') {
                 historicoMILLONMIN.shift();
                 historicoMILLONMIN.push("E");
                 actualizarHistorico("Millón_Minoría", historicoMILLONMIN);
@@ -3485,7 +3469,7 @@
                 }
             }
             //MHI mayoria2 y minoria2
-            if (coloresDigitos[2] === 'doji' || coloresDigitos[3] === 'doji' || coloresDigitos[4] === coloresDigitos == 'doji') {
+            if (coloresDigitos[2] === 'doji' || coloresDigitos[3] === 'doji' || coloresDigitos[4] === 'doji') {
                 historicoMHI2.shift();
                 historicoMHI2.push("E");
                 actualizarHistorico("MHI_2_Minoría", historicoMHI2);
@@ -3587,7 +3571,7 @@
             if (coloresDigitos[2] !== 'doji' && coloresDigitos[3] !== 'doji' && coloresDigitos[4] !== 'doji') {
                 const minoritario = colorMenosRepetido([2, 3, 4]);
                 if (minoritario === coloresDigitos[7]) {
-                    if (minoritario == 'green') {
+                    if (minoritario === 'green') {
                         getCelda('MHI 3 Mayoría', 3).style.backgroundColor = 'red';
                     } else {
                         getCelda('MHI 3 Mayoría', 6).style.backgroundColor = 'green';
@@ -3697,7 +3681,7 @@
                 }
             }
             //MHI mayoria3 y minoria3
-            if (coloresDigitos[2] === 'doji' || coloresDigitos[3] === 'doji' || coloresDigitos[4] === coloresDigitos == 'doji') {
+            if (coloresDigitos[2] === 'doji' || coloresDigitos[3] === 'doji' || coloresDigitos[4] === 'doji') {
                 historicoMHI3.shift();
                 historicoMHI3.push("E");
                 actualizarHistorico("MHI_3_Minoría", historicoMHI3);
@@ -3742,7 +3726,7 @@
                 }
             }
             //Mejor de 3
-            if (coloresDigitos[1] === 'doji' || coloresDigitos[2] === 'doji' || coloresDigitos[3] === coloresDigitos == 'doji') {
+            if (coloresDigitos[1] === 'doji' || coloresDigitos[2] === 'doji' || coloresDigitos[3] === 'doji') {
                 historicoMEJOR3.shift();
                 historicoMEJOR3.push("E");
                 actualizarHistorico("Mejor_de_3", historicoMEJOR3);
@@ -3857,7 +3841,7 @@
             getCelda('Patron 3x1', 4).style.backgroundColor = '';
             if (coloresDigitos[5] !== 'doji' && coloresDigitos[6] !== 'doji' && coloresDigitos[7] !== 'doji') {    //Para si hay un doji no hacer nada
                 const minoritario = colorMenosRepetido([5, 6, 7]);
-                if (minoritario == 'green') {
+                if (minoritario === 'green') {
                     getCelda('Patron 3x1', 5).style.backgroundColor = 'green';
                 } else {
                     getCelda('Patron 3x1', 2).style.backgroundColor = 'red';
@@ -4115,7 +4099,7 @@
                 }
             }
             //Patron 3x1
-            if (coloresDigitos[5] === 'doji' || coloresDigitos[6] === 'doji' || coloresDigitos[7] === coloresDigitos == 'doji') {
+            if (coloresDigitos[5] === 'doji' || coloresDigitos[6] === 'doji' || coloresDigitos[7] === 'doji') {
                 historicoPATRON3X1.shift();
                 historicoPATRON3X1.push("E");
                 actualizarHistorico("Patron_3x1", historicoPATRON3X1);
