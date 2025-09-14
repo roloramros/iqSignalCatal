@@ -60,7 +60,7 @@ def calculate_seconds_to_next_minute():
 def verificar_integridad_velas():
     response = ejecutar_query(lambda: supabase.table("audcad_otc")
                               .select("*")
-                              .order("start_time", desc=True)
+                              .order("end_time", desc=True)
                               .limit(15)
                               .execute())
 
@@ -70,13 +70,13 @@ def verificar_integridad_velas():
         print("❌ No hay suficientes velas para verificar integridad.")
         return
 
-    datos_ordenados = sorted(datos, key=lambda x: x['start_time'])
+    datos_ordenados = sorted(datos, key=lambda x: x['end_time'])
     tiempos = []
     for d in datos_ordenados:
         try:
-            tiempos.append(datetime.strptime(d['start_time'], "%H:%M:%S"))
+            tiempos.append(datetime.strptime(d['end_time'], "%H:%M:%S"))
         except Exception as e:
-            mensaje = f"⚠️ Error al convertir hora: {d['start_time']} -> {e}"
+            mensaje = f"⚠️ Error al convertir hora: {d['end_time']} -> {e}"
             print(mensaje)
             enviar_telegram_error(mensaje)
             return
@@ -84,8 +84,8 @@ def verificar_integridad_velas():
     for i in range(1, len(tiempos)):
         diff = (tiempos[i] - tiempos[i-1]).total_seconds()
         if diff != 60:
-            mensaje = (f"🚨 Falta una vela entre {datos_ordenados[i-1]['start_time']} "
-                       f"y {datos_ordenados[i]['start_time']}")
+            mensaje = (f"🚨 Falta una vela entre {datos_ordenados[i-1]['end_time']} "
+                       f"y {datos_ordenados[i]['end_time']}")
             print(mensaje)
             enviar_telegram_error(mensaje)
             return
@@ -99,8 +99,12 @@ print("🧹 Borrando registros anteriores...")
 ejecutar_query(lambda: supabase.table("audcad_otc").delete().neq("id", 0).execute())
 
 # --- DESCARGAR VELAS HISTÓRICAS ---
-print("📥 Descargando las últimas 3 horas de velas...")
-candles = I_want_money.get_candles("AUDCAD-OTC", 60, 180, time.time())
+print("📥 Descargando todas las velas desde las 00:00 del día actual...")
+ahora = datetime.now()
+inicio_dia = ahora.replace(hour=0, minute=0, second=0, microsecond=0)
+timestamp_inicio_dia = inicio_dia.timestamp()
+minutos_desde_inicio_dia = int((ahora - inicio_dia).total_seconds() / 60)
+candles = I_want_money.get_candles("AUDCAD-OTC", 60, minutos_desde_inicio_dia + 2, time.time())
 if candles:
     candles.pop()
     candles.pop()
@@ -163,7 +167,7 @@ while True:
                 inicio_str = inicio_ayer.strftime("%Y-%m-%d %H:%M:%S")
                 fin_str = fin_ayer.strftime("%Y-%m-%d %H:%M:%S")
 
-                ejecutar_query(lambda: supabase.table("audcad_otc")
+                ejecutar_query(lambda: supabase.table("usdchf_otc")
                                .delete()
                                .gte("created_at", inicio_str)
                                .lte("created_at", fin_str)

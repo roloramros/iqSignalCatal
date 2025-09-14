@@ -8,6 +8,14 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 
+const axios = require('axios');
+const https = require("https");
+const agent = new https.Agent({ family: 4 }); // 👈 Forzar IPv4
+
+const TELEGRAM_TOKEN = "7971141664:AAFNFXWpHePHVkaedf1F75GKUk4bHwcJ_HE";
+const TELEGRAM_TOKEN_LOG = "8403266609:AAEBEnN1i72-7kYbd2dsZtEjSuhsrxkjQ7c";
+const TELEGRAM_CHAT_ID = "1589398506";
+
 const app = express();
 const port = 3000;
 
@@ -26,7 +34,43 @@ app.use(session({
   resave: false,
   saveUninitialized: false
 }));
-app.use(express.json()); 
+app.use(express.json());
+
+// Login
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error || !data.user) {
+    return res.render('login', { error: error?.message || 'Error al iniciar sesión' });
+  }
+
+  req.session.user = data.user;
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  const userAgent = req.headers['user-agent'];
+
+  try {
+    // Consulta a la tabla telegram_chat_ids
+    const { data: telegramData, error: telegramError } = await supabase
+      .from('telegram_chat_ids')
+      .select('telegram_alias')
+      .eq('user_id', data.user.id)
+      .single();
+
+    let telegramAlias = "No definido";
+
+    if (!telegramError && telegramData) {
+      telegramAlias = telegramData.telegram_alias || "No definido";
+    }
+
+    // 🔔 Enviar mensaje a Telegram
+    await sendTelegramMessage(`🔐 Login exitoso:\nEmail: ${email}\nTelegram: ${telegramAlias}`);
+  } catch (telegramError) {
+    console.error("Error enviando login a Telegram:", telegramError);
+  }
+
+  res.redirect('/panel');
+});
 
 // Función para renderizar con layout
 function renderWithLayout(viewPath, options, res) {
@@ -59,51 +103,7 @@ app.get('/register', (req, res) => {
   });
 });
 
-// Login
-app.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-  if (error || !data.user) {
-    return res.render('login', { error: error?.message || 'Error al iniciar sesión' });
-  }
-
-  req.session.user = data.user;
-  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-  const userAgent = req.headers['user-agent'];
-
-  try {
-    // Recuperar el alias de Telegram desde user_metadata
-    const telegramAlias = data.user.user_metadata?.telegram_username || "No definido";
-
-    // 🔔 Enviar mensaje a Telegram
-    await sendTelegramMessage(`🔐 Login exitoso:\nEmail: ${email}\nTelegram: ${telegramAlias}`);
-  } catch (telegramError) {
-    console.error("Error enviando login a Telegram:", telegramError);
-  }
-
-  try {
-    // Buscar si ya existe este dispositivo para este usuario
-    const { data: existing } = await supabase
-      .from("dispositivos_usuarios")
-      .select("*")
-      .eq("user_id", data.user.id)
-      .eq("ip", ip)
-      .eq("user_agent", userAgent);
-
-    if (!existing || existing.length === 0) {
-      await supabase.from("dispositivos_usuarios").insert({
-        user_id: data.user.id,
-        ip: ip,
-        user_agent: userAgent
-      });
-    }
-  } catch (e) {
-    console.error("❌ Error guardando dispositivo:", e);
-  }
-
-  res.redirect('/panel');
-});
 
 // Registro modificado
 app.post('/register', async (req, res) => {
@@ -156,18 +156,13 @@ app.post('/register', async (req, res) => {
 });
 
 
-const axios = require('axios');
-const https = require("https");
-const agent = new https.Agent({ family: 4 }); // 👈 Forzar IPv4
 
-const TELEGRAM_TOKEN = "8403266609:AAEBEnN1i72-7kYbd2dsZtEjSuhsrxkjQ7c";
-const TELEGRAM_CHAT_ID = "1589398506";
 
 
 
 async function sendTelegramMessage(message) {
   try {
-    await axios.post(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+    await axios.post(`https://api.telegram.org/bot${TELEGRAM_TOKEN_LOG}/sendMessage`, {
       chat_id: TELEGRAM_CHAT_ID,
       text: message,
       parse_mode: "HTML"
@@ -334,10 +329,6 @@ app.get('/eurusd', requireLogin, (req, res) => {
     supabaseKey: process.env.SUPABASE_KEY
   }, res);
 });
-
-
-
-
 
 
 
